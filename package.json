@@ -1,0 +1,54 @@
+{
+  "name": "trip-calc",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "vp build && vp exec alchemy deploy",
+    "deploy:yes": "vp build && vp exec alchemy deploy --yes",
+    "destroy": "vp exec alchemy destroy",
+    "plan": "vp exec alchemy plan",
+    "build": "vp build",
+    "preview": "vp build && vp preview",
+    "dev": "vp dev",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:generate": "drizzle-kit generate",
+    "fmt": "vp fmt",
+    "lint": "vp lint",
+    "check": "vp check",
+    "test": "vp test",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/vite-plugin": "^1.54.6",
+    "@effect/platform-bun": "4.0.0-rc.117",
+    "@effect/platform-node": "4.0.0-rc.117",
+    "@solidjs/meta": "1.0.0-next.2",
+    "@solidjs/router": "2.0.0-next.23",
+    "@solidjs/web": "2.0.0-rc.7",
+    "alchemy": "2.0.0-beta.79",
+    "drizzle-orm": "1.0.0-rc.4",
+    "effect": "4.0.0-rc.117",
+    "solid-js": "2.0.0-rc.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260910.1",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "drizzle-kit": "1.0.0-rc.4",
+    "jsdom": "^30.0.1",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1",
+    "vite-plugin-solid": "3.0.0-next.27",
+    "vite-plus": "^0.3.1",
+    "wrangler": "^4.130.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "overrides": {
+      "vite@*": "npm:@voidzero-dev/vite-plus-core@0.3.1",
+      "vitest@*": "4.1.11"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
+  }
+}
