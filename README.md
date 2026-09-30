@@ -25,7 +25,7 @@ Built on the [web-template](https://github.com/peculiarnewbie/web-template)
   amounts on each settlement transfer
 - Expenses with a payer and either an even split or custom per-person amounts
 - Expenses sorted by largest amount, and split lists sorted alphabetically
-- Color-code people from a muted palette; the color follows each name through
+- Color-code people with a muted 20-color palette; the color follows each name through
   expenses, balances, and settlement (auto-assigned, changeable per person)
 - Remainder cents distributed so shares always sum to the total
 - Per-trip currency in trip settings; zero-decimal currencies (IDR, JPY, KRW,
