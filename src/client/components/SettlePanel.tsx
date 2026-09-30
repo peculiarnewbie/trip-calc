@@ -1,7 +1,7 @@
 import { createMemo, createSignal } from "solid-js";
 import { For, Show } from "@solidjs/web";
 import { centsToInput, formatCents } from "../../shared/money";
-import type { TripDetail } from "../../shared/types";
+import type { Transfer, TripDetail } from "../../shared/types";
 import { Icon } from "./Icon";
 import { CopyButton } from "./CopyButton";
 import { PersonName } from "./PersonName";
@@ -10,6 +10,15 @@ export function SettlePanel(props: { detail: TripDetail; readOnly?: boolean }) {
   const byId = createMemo(() => new Map(props.detail.people.map((person) => [person.id, person])));
   const currency = () => props.detail.trip.currency;
   const transfers = () => props.detail.settlement.transfers;
+  const recipients = createMemo(() => {
+    const groups = new Map<string, Transfer[]>();
+    for (const transfer of transfers()) {
+      const payments = groups.get(transfer.toPersonId);
+      if (payments) payments.push(transfer);
+      else groups.set(transfer.toPersonId, [transfer]);
+    }
+    return Array.from(groups, ([personId, payments]) => ({ personId, payments }));
+  });
   const balances = () => props.detail.settlement.balances;
   const [copyError, setCopyError] = createSignal("");
 
@@ -99,44 +108,22 @@ export function SettlePanel(props: { detail: TripDetail; readOnly?: boolean }) {
             everything
           </div>
           <ul class="tc-transfers">
-            <For each={transfers()}>
-              {(transfer) => (
-                <li class="tc-transfer">
-                  <div class="tc-transfer-summary">
-                    <span class="tc-transfer-from">
-                      <PersonName person={byId().get(transfer.fromPersonId)} />
-                    </span>
-                    <span class="tc-transfer-arrow">
-                      <Icon name="arrow-right" />
-                    </span>
-                    <span class="tc-transfer-to">
-                      <PersonName person={byId().get(transfer.toPersonId)} />
-                    </span>
-                    <span class="tc-spacer" />
-                    <span class="tc-transfer-amount">
-                      {formatCents(transfer.amountCents, currency())}
-                      <CopyButton
-                        value={centsToInput(transfer.amountCents, currency())}
-                        label={`Copy amount owed by ${byId().get(transfer.fromPersonId)?.name} to ${byId().get(transfer.toPersonId)?.name}`}
-                        onError={setCopyError}
-                      />
-                    </span>
-                  </div>
-                  <Show when={(byId().get(transfer.toPersonId)?.paymentMethods.length ?? 0) > 0}>
+            <For each={recipients()}>
+              {(recipient) => (
+                <li class="tc-settlement-group">
+                  <h3 class="tc-settlement-recipient">
+                    Pay <PersonName person={byId().get(recipient.personId)} />
+                  </h3>
+                  <Show when={(byId().get(recipient.personId)?.paymentMethods.length ?? 0) > 0}>
                     <div class="tc-transfer-methods">
-                      <span class="tc-pay-label">
-                        Pay {byId().get(transfer.toPersonId)?.name} with
-                      </span>
-                      <For each={byId().get(transfer.toPersonId)?.paymentMethods ?? []}>
+                      <For each={byId().get(recipient.personId)?.paymentMethods ?? []}>
                         {(entry) => (
                           <div class="tc-payment-row">
-                            <div class="tc-payment-details">
-                              <span class="tc-payment-name">{entry.method}</span>
-                              <span class="tc-pay-text">{entry.destination}</span>
-                            </div>
+                            <span class="tc-payment-name">{entry.method}</span>
+                            <span class="tc-pay-text">{entry.destination}</span>
                             <CopyButton
                               value={entry.destination}
-                              label={`Copy ${entry.method} destination for ${byId().get(transfer.toPersonId)?.name}`}
+                              label={`Copy ${entry.method} destination for ${byId().get(recipient.personId)?.name}`}
                               onError={setCopyError}
                             />
                           </div>
@@ -144,6 +131,25 @@ export function SettlePanel(props: { detail: TripDetail; readOnly?: boolean }) {
                       </For>
                     </div>
                   </Show>
+                  <ul class="tc-recipient-payments">
+                    <For each={recipient.payments}>
+                      {(transfer) => (
+                        <li class="tc-transfer-summary">
+                          <span class="tc-transfer-from">
+                            <PersonName person={byId().get(transfer.fromPersonId)} />
+                          </span>
+                          <span class="tc-transfer-amount">
+                            {formatCents(transfer.amountCents, currency())}
+                            <CopyButton
+                              value={centsToInput(transfer.amountCents, currency())}
+                              label={`Copy amount owed by ${byId().get(transfer.fromPersonId)?.name} to ${byId().get(recipient.personId)?.name}`}
+                              onError={setCopyError}
+                            />
+                          </span>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
                 </li>
               )}
             </For>
