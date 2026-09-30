@@ -4,14 +4,24 @@
  */
 export const PERSON_COLORS = {
   blue: "#6f9bf0",
+  indigo: "#8793e8",
   sky: "#6bb9e0",
+  cyan: "#69ced9",
   teal: "#5fc6b8",
+  mint: "#93d2b1",
   green: "#78c98a",
+  olive: "#a8b780",
   lime: "#b2c95f",
+  yellow: "#d9ca78",
   amber: "#e0b45f",
+  orange: "#d99a62",
+  peach: "#e6b39d",
   coral: "#e08573",
+  red: "#db797c",
   rose: "#e07fa3",
+  pink: "#cf94c7",
   violet: "#a98bf0",
+  lavender: "#c0a8dc",
   slate: "#93a3bd",
 } as const;
 
@@ -35,6 +45,16 @@ export const PERSON_COLOR_ASSIGNMENT: PersonColorKey[] = [
   "sky",
   "lime",
   "slate",
+  "red",
+  "cyan",
+  "orange",
+  "indigo",
+  "mint",
+  "pink",
+  "yellow",
+  "lavender",
+  "olive",
+  "peach",
 ];
 
 export function isPersonColorKey(value: string): value is PersonColorKey {

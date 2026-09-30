@@ -1,32 +1,34 @@
-import { createMemo } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import { For, Show } from "@solidjs/web";
-import { formatCents } from "../../shared/money";
-import type { TripDetail } from "../../shared/types";
+import { centsToInput, formatCents } from "../../shared/money";
+import type { Transfer, TripDetail } from "../../shared/types";
 import { Icon } from "./Icon";
+import { CopyButton } from "./CopyButton";
 import { PersonName } from "./PersonName";
 
 export function SettlePanel(props: { detail: TripDetail; readOnly?: boolean }) {
   const byId = createMemo(() => new Map(props.detail.people.map((person) => [person.id, person])));
   const currency = () => props.detail.trip.currency;
   const transfers = () => props.detail.settlement.transfers;
-  const balances = () => props.detail.settlement.balances;
-
-  /** Payment info for everyone who receives money, shown once below the transfers. */
-  const payouts = createMemo(() => {
-    const seen = new Set<string>();
-    const entries: Array<{ name: string; info: string }> = [];
+  const recipients = createMemo(() => {
+    const groups = new Map<string, Transfer[]>();
     for (const transfer of transfers()) {
-      if (seen.has(transfer.toPersonId)) continue;
-      seen.add(transfer.toPersonId);
-      const person = byId().get(transfer.toPersonId);
-      const info = person?.paymentInfo?.trim() ?? "";
-      if (person && info) entries.push({ name: person.name, info });
+      const payments = groups.get(transfer.toPersonId);
+      if (payments) payments.push(transfer);
+      else groups.set(transfer.toPersonId, [transfer]);
     }
-    return entries;
+    return Array.from(groups, ([personId, payments]) => ({ personId, payments }));
   });
+  const balances = () => props.detail.settlement.balances;
+  const [copyError, setCopyError] = createSignal("");
 
   return (
     <div class="tc-panel">
+      <Show when={copyError()}>
+        <div class="tc-error" role="alert">
+          {copyError()}
+        </div>
+      </Show>
       <Show
         when={props.detail.expenses.length > 0}
         fallback={
@@ -106,38 +108,52 @@ export function SettlePanel(props: { detail: TripDetail; readOnly?: boolean }) {
             everything
           </div>
           <ul class="tc-transfers">
-            <For each={transfers()}>
-              {(transfer) => (
-                <li class="tc-transfer">
-                  <span class="tc-transfer-from">
-                    <PersonName person={byId().get(transfer.fromPersonId)} />
-                  </span>
-                  <span class="tc-transfer-arrow">
-                    <Icon name="arrow-right" />
-                  </span>
-                  <span class="tc-transfer-to">
-                    <PersonName person={byId().get(transfer.toPersonId)} />
-                  </span>
-                  <span class="tc-spacer" />
-                  <span class="tc-transfer-amount">
-                    {formatCents(transfer.amountCents, currency())}
-                  </span>
+            <For each={recipients()}>
+              {(recipient) => (
+                <li class="tc-settlement-group">
+                  <h3 class="tc-settlement-recipient">
+                    Pay <PersonName person={byId().get(recipient.personId)} />
+                  </h3>
+                  <Show when={(byId().get(recipient.personId)?.paymentMethods.length ?? 0) > 0}>
+                    <div class="tc-transfer-methods">
+                      <For each={byId().get(recipient.personId)?.paymentMethods ?? []}>
+                        {(entry) => (
+                          <div class="tc-payment-row">
+                            <span class="tc-payment-name">{entry.method}</span>
+                            <span class="tc-pay-text">{entry.destination}</span>
+                            <CopyButton
+                              value={entry.destination}
+                              label={`Copy ${entry.method} destination for ${byId().get(recipient.personId)?.name}`}
+                              onError={setCopyError}
+                            />
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </Show>
+                  <ul class="tc-recipient-payments">
+                    <For each={recipient.payments}>
+                      {(transfer) => (
+                        <li class="tc-transfer-summary">
+                          <span class="tc-transfer-from">
+                            <PersonName person={byId().get(transfer.fromPersonId)} />
+                          </span>
+                          <span class="tc-transfer-amount">
+                            {formatCents(transfer.amountCents, currency())}
+                            <CopyButton
+                              value={centsToInput(transfer.amountCents, currency())}
+                              label={`Copy amount owed by ${byId().get(transfer.fromPersonId)?.name} to ${byId().get(recipient.personId)?.name}`}
+                              onError={setCopyError}
+                            />
+                          </span>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
                 </li>
               )}
             </For>
           </ul>
-          <Show when={payouts().length > 0}>
-            <div class="tc-pay-list">
-              <For each={payouts()}>
-                {(entry) => (
-                  <div class="tc-pay">
-                    <span class="tc-pay-label">Pay {entry.name} with</span>
-                    <span class="tc-pay-text">{entry.info}</span>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
         </Show>
       </Show>
     </div>

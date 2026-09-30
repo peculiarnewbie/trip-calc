@@ -4,6 +4,7 @@ import type { Person } from "../../shared/types";
 import { api } from "../api";
 import { ColorPicker } from "./ColorPicker";
 import { Icon } from "./Icon";
+import { PaymentMethodsEditor } from "./PaymentMethodsEditor";
 
 export function PeoplePanel(props: {
   token: string;
@@ -96,19 +97,6 @@ export function PeoplePanel(props: {
           <For each={props.people}>
             {(person) => {
               const color = () => personColor(person);
-              const [paymentInfo, setPaymentInfo] = createSignal(person.paymentInfo ?? "");
-
-              async function savePaymentInfo() {
-                const next = paymentInfo().trim();
-                if (next === (person.paymentInfo ?? "")) return;
-                setError("");
-                try {
-                  await api.updatePerson(props.token, person.id, { paymentInfo: next || null });
-                  props.onChanged();
-                } catch (cause) {
-                  setError(cause instanceof Error ? cause.message : String(cause));
-                }
-              }
 
               return (
                 <div class="tc-person">
@@ -134,14 +122,11 @@ export function PeoplePanel(props: {
                       <Icon name="trash" />
                     </button>
                   </Show>
-                  <textarea
-                    class="tc-person-pay"
-                    rows={2}
-                    readonly={props.readOnly}
-                    placeholder={`Where should ${person.name} receive money? (PayPal, bank account, phone number…)`}
-                    value={paymentInfo()}
-                    onInput={(event) => setPaymentInfo(event.currentTarget.value)}
-                    onBlur={() => void savePaymentInfo()}
+                  <PaymentMethodsEditor
+                    token={props.token}
+                    person={person}
+                    readOnly={props.readOnly}
+                    onChanged={props.onChanged}
                   />
                 </div>
               );

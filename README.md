@@ -5,7 +5,7 @@ transfers. Log who paid for what — split evenly or with custom per-person
 amounts — and Trip Calc works out exactly who should send how much to whom.
 
 Built on the [web-template](https://github.com/peculiarnewbie/web-template)
-(Alchemy v2 + Effect + Solid.js), with the UI inspired by
+(Effect + Solid.js), with the UI inspired by
 [d1-studio](https://github.com/peculiarnewbie/d1-studio).
 
 ## Accounts & sharing
@@ -21,9 +21,11 @@ Built on the [web-template](https://github.com/peculiarnewbie/web-template)
 
 - Trip list with per-trip totals, scoped to your account number
 - People per trip
+- Multiple payment methods per person, with copy buttons for destinations and
+  amounts on each settlement transfer
 - Expenses with a payer and either an even split or custom per-person amounts
 - Expenses sorted by largest amount, and split lists sorted alphabetically
-- Color-code people from a muted palette; the color follows each name through
+- Color-code people with a muted 20-color palette; the color follows each name through
   expenses, balances, and settlement (auto-assigned, changeable per person)
 - Remainder cents distributed so shares always sum to the total
 - Per-trip currency in trip settings; zero-decimal currencies (IDR, JPY, KRW,
@@ -36,40 +38,53 @@ Built on the [web-template](https://github.com/peculiarnewbie/web-template)
 
 ## Stack
 
-| Layer         | Tool                                                             |
-| ------------- | ---------------------------------------------------------------- |
-| Infra-as-code | [Alchemy v2](https://github.com/nicedoc/alchemy)                 |
-| Runtime       | [Effect](https://effect.website) (`effect/unstable/http` router) |
-| Frontend      | [Solid.js 2](https://solidjs.com) + Solid Router                 |
-| Storage       | Cloudflare D1 + [Drizzle ORM](https://orm.drizzle.team)          |
-| Build/dev     | [Vite+](https://viteplus.dev) + Cloudflare Vite plugin           |
-| Tests         | [Vitest](https://vitest.dev) (bundled in `vp`)                   |
+| Layer     | Tool                                                             |
+| --------- | ---------------------------------------------------------------- |
+| Deploy    | [Cloudflare CLI](https://developers.cloudflare.com/cf/) (`cf`)   |
+| Runtime   | [Effect](https://effect.website) (`effect/unstable/http` router) |
+| Frontend  | [Solid.js 2](https://solidjs.com) + Solid Router                 |
+| Storage   | Cloudflare D1 + [Drizzle ORM](https://orm.drizzle.team)          |
+| Build/dev | [Vite+](https://viteplus.dev) + Cloudflare Vite plugin           |
+| Tests     | [Vitest](https://vitest.dev) (bundled in `vp`)                   |
 
 ## Quick start
 
 ```bash
 pnpm install
+cf auth login          # required for deployment; local development works without login
 pnpm db:migrate:local   # create tables in the local D1 (once)
 pnpm dev                # http://localhost:5173
 ```
 
 ## Commands
 
-| Run                     | What it does                                  |
-| ----------------------- | --------------------------------------------- |
-| `pnpm dev`              | Vite dev server + Worker + local D1 (workerd) |
-| `pnpm build`            | Build client (`dist/client`) and Worker       |
-| `pnpm preview`          | Build then preview in the Workers runtime     |
-| `pnpm run deploy`       | Build then deploy via Alchemy                 |
-| `pnpm run deploy:yes`   | Same, non-interactive (`--yes`)               |
-| `pnpm destroy`          | Tear down the Alchemy stack                   |
-| `pnpm db:migrate:local` | Apply migrations to the local D1              |
-| `pnpm db:generate`      | Generate a Drizzle migration                  |
-| `pnpm check`            | Format check + lint + typecheck               |
-| `pnpm test`             | Run all tests                                 |
+| Run                      | What it does                                             |
+| ------------------------ | -------------------------------------------------------- |
+| `pnpm dev`               | Vite dev server + Worker + local D1 (workerd)            |
+| `pnpm build`             | Build client and Worker into `.cloudflare/output/v0`     |
+| `pnpm preview`           | Build then preview in the Workers runtime                |
+| `pnpm run deploy`        | Build, apply remote D1 migrations, then deploy with `cf` |
+| `pnpm plan`              | Build and validate a deployment without uploading        |
+| `pnpm db:migrate:local`  | Apply migrations to the local D1                         |
+| `pnpm db:migrate:remote` | Apply migrations to the production D1                    |
+| `pnpm db:generate`       | Generate a Drizzle migration                             |
+| `pnpm check`             | Format check + lint                                      |
+| `pnpm test`              | Run all tests                                            |
+| `pnpm typecheck`         | TypeScript check                                         |
 
-> Alchemy applies `src/migrations` to the remote D1 on deploy, so no remote
-> migration step is needed.
+`cloudflare.config.ts` configures the Worker, the existing D1 database, SPA
+assets, and `trip-calc.peculiarnewbie.com`. Local D1 state lives in
+`.cloudflare/state`. The `cf` CLI and Cloudflare Vite plugin are pinned to beta
+releases, which support the new TypeScript configuration.
+
+Use `pnpm run deploy`: `pnpm deploy` is a different pnpm built-in command. The
+deployment script builds first, applies SQL migrations from `src/migrations`,
+then uploads that same build with `cf deploy --prebuilt`.
+
+The production database was previously managed by Alchemy. The one-time
+`pnpm db:adopt:alchemy` command verifies the SHA-256 hashes of migrations 0001–0004
+and copies their history into `d1_migrations`; it does not rerun their SQL.
+It is retained for auditing the handoff and is not part of normal deployments.
 
 ## How settlement works
 

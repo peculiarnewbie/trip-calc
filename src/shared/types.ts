@@ -6,14 +6,20 @@ export type SplitMode = Schema.Schema.Type<typeof SplitModeSchema>;
 export const TripRoleSchema = Schema.Literals(["edit", "view"]);
 export type TripRole = Schema.Schema.Type<typeof TripRoleSchema>;
 
+export const PaymentMethodSchema = Schema.Struct({
+  method: Schema.String,
+  destination: Schema.String,
+});
+export type PaymentMethod = Schema.Schema.Type<typeof PaymentMethodSchema>;
+
 export const PersonSchema = Schema.Struct({
   id: Schema.String,
   tripId: Schema.String,
   name: Schema.String,
   /** Palette key from `shared/colors.ts`, or null to use the fallback. */
   color: Schema.NullOr(Schema.String),
-  /** Free-form text: where this person wants to receive transfers. */
-  paymentInfo: Schema.NullOr(Schema.String),
+  /** Named destinations where this person wants to receive transfers. */
+  paymentMethods: Schema.Array(PaymentMethodSchema),
   createdAt: Schema.String,
 });
 export type Person = Schema.Schema.Type<typeof PersonSchema>;
@@ -123,7 +129,7 @@ export type CreatePersonRequest = Schema.Schema.Type<typeof CreatePersonRequestS
 
 export const UpdatePersonRequestSchema = Schema.Struct({
   color: Schema.optional(Schema.NullOr(Schema.String)),
-  paymentInfo: Schema.optional(Schema.NullOr(Schema.String)),
+  paymentMethods: Schema.optional(Schema.Array(PaymentMethodSchema)),
 });
 export type UpdatePersonRequest = Schema.Schema.Type<typeof UpdatePersonRequestSchema>;
 

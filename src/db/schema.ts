@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { PaymentMethod } from "../shared/types";
 
 export const accounts = sqliteTable(
   "accounts",
@@ -38,6 +39,10 @@ export const people = sqliteTable(
     name: text("name").notNull(),
     color: text("color"),
     paymentInfo: text("payment_info"),
+    paymentMethods: text("payment_methods", { mode: "json" })
+      .$type<PaymentMethod[]>()
+      .notNull()
+      .default([]),
     createdAt: text("created_at").notNull(),
   },
   (table) => [index("people_trip_idx").on(table.tripId)],

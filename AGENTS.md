@@ -1,4 +1,4 @@
-# Trip Calc — Alchemy v2 + Effect + Solid.js
+# Trip Calc — Cloudflare CLI + Effect + Solid.js
 
 Split trip expenses between friends and settle up with the fewest possible
 transfers. Create a trip, add the people on it, log who paid for what (split
@@ -7,21 +7,24 @@ much to whom.
 
 ## Stack
 
-- **Alchemy v2** — infra-as-code (Cloudflare Worker + D1) for `deploy`
-- **Cloudflare Vite plugin + `wrangler.jsonc`** — local dev/build (workerd + local D1)
+- **Cloudflare CLI (`cf`)** — dev, build, D1 migrations, and deploy
+- **Cloudflare Vite plugin + `cloudflare.config.ts`** — workerd + local D1;
+  the CLI and plugin are pinned to beta releases for the new configuration
 - **Effect** — typed errors, `Context.Service`, Effect Schema, `effect/unstable/http` router
 - **Solid.js 2** — reactive UI with Solid Router
 - **Drizzle ORM** — D1 schema (`src/db/schema.ts`) + migrations (`src/migrations/`)
-- **Vite+** — toolchain (`vp`): dev, build, fmt (oxfmt), lint (oxlint), test (Vitest)
+- **Vite+** — Vite bundler and toolchain (`vp`): fmt (oxfmt), lint (oxlint), test (Vitest)
 - **TypeScript 7** beta (`tsgo --noEmit`)
 - **pnpm** — package manager
 
 ## Architecture
 
-- `wrangler.jsonc` — Worker name, `main`, D1 binding (`DB`), SPA assets with
-  `run_worker_first: ["/api/*"]`. Used by the Cloudflare Vite plugin for dev/build.
-- `alchemy.run.ts` — declares the D1 database and Worker for `deploy` (custom domain
-  `trip-calc.peculiarnewbie.com`); assets come from `dist/client`.
+- `cloudflare.config.ts` — Worker entrypoint, existing D1 binding (`DB`), SPA
+  assets with `runWorkerFirst: ["/api/*"]`, and custom domain
+  `trip-calc.peculiarnewbie.com`. Used by `cf` and the Cloudflare Vite plugin.
+- `.cloudflare/output/v0` — built Worker and client assets, uploaded by `cf deploy`.
+- `scripts/adopt-alchemy-history.mjs` + `.sql` — one-time, hash-verified adoption
+  of migrations 0001–0004 from Alchemy's history into `d1_migrations`.
 - `src/worker.ts` — standard `ExportedHandler<Env>`; `/api/*` goes to the Effect
   router, everything else to static assets.
 - `src/server/` — `db.ts` (D1 queries, accounts, token resolution), `routes.ts`
@@ -51,7 +54,9 @@ settings. Trips reached only by link (no account ownership) also hide the sideba
 - `accounts` — id, number (unique), created_at
 - `trips` — id, account_id, name, currency, edit_token, view_token, created_at
 - `people` — id, trip_id, name, color (palette key from `shared/colors.ts`),
-  payment_info (free-text payout details, shown under settling transfers), created_at
+  payment_methods (named payout destinations, shown under settling transfers), created_at.
+  Legacy payment_info is retained in the database; migration 0005 preserves it as
+  a "Payment details" method.
 - `expenses` — id, trip_id, description, amount_cents, payer_id, split_mode (`even` | `custom`), created_at
 - `expense_shares` — id, expense_id, person_id, amount_cents
 
@@ -74,26 +79,27 @@ the greedy result, which never routes money through a third person.
 
 ## Commands
 
-| Run                     | What it does                                  |
-| ----------------------- | --------------------------------------------- |
-| `pnpm dev`              | Vite dev server + Worker + local D1 (workerd) |
-| `pnpm build`            | Build client (`dist/client`) and Worker       |
-| `pnpm preview`          | Build then preview in the Workers runtime     |
-| `pnpm run deploy`       | Build then deploy the stack via Alchemy       |
-| `pnpm run deploy:yes`   | Same, non-interactive (`--yes`)               |
-| `pnpm destroy`          | Tear down the Alchemy stack                   |
-| `pnpm db:migrate:local` | Apply migrations to the local D1 database     |
-| `pnpm db:generate`      | Generate a Drizzle migration                  |
-| `pnpm check`            | Format check + lint                           |
-| `pnpm test`             | Run all tests (Vitest)                        |
-| `pnpm typecheck`        | TypeScript 7 check                            |
+| Run                      | What it does                                         |
+| ------------------------ | ---------------------------------------------------- |
+| `pnpm dev`               | Vite dev server + Worker + local D1 (workerd)        |
+| `pnpm build`             | Build client and Worker into `.cloudflare/output/v0` |
+| `pnpm preview`           | Build then preview in the Workers runtime            |
+| `pnpm run deploy`        | Build, migrate remote D1, then deploy with `cf`      |
+| `pnpm plan`              | Build and validate a deployment without uploading    |
+| `pnpm db:migrate:local`  | Apply migrations to the local D1 database            |
+| `pnpm db:migrate:remote` | Apply migrations to the production D1                |
+| `pnpm db:adopt:alchemy`  | Verify and adopt legacy migration history once       |
+| `pnpm db:generate`       | Generate a Drizzle migration                         |
+| `pnpm check`             | Format check + lint                                  |
+| `pnpm test`              | Run all tests (Vitest)                               |
+| `pnpm typecheck`         | TypeScript 7 check                                   |
 
 > `pnpm dev` runs against a local, empty copy of `DB`. Run `pnpm db:migrate:local`
-> once to create the tables. Alchemy applies `src/migrations` to the remote D1 on
-> deploy, so no remote migration step is needed.
+> once to create the tables. Local state lives in `.cloudflare/state`. The deploy
+> script builds, applies `src/migrations` to remote D1, then deploys the prebuilt
+> output. `cf` D1 commands default to remote; use `--local` for development.
 >
-> `pnpm deploy` is a pnpm built-in, so use `pnpm run deploy` (or `pnpm run deploy:yes`
-> for non-interactive/CI).
+> `pnpm deploy` is a pnpm built-in, so use `pnpm run deploy`.
 
 ## Tests
 

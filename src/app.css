@@ -538,24 +538,37 @@ textarea {
 
 .tc-person-pay {
   flex: 1 0 100%;
-  min-height: 34px;
-  padding: 6px 9px;
-  border: 1px solid var(--tc-border);
-  border-radius: 7px;
-  background: var(--tc-bg);
-  color: var(--tc-text);
-  font: inherit;
-  font-size: 12px;
-  resize: vertical;
-  outline: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.tc-person-pay:focus {
-  border-color: var(--tc-accent);
+.tc-payment-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: end;
+  gap: 8px;
 }
 
-.tc-person-pay::placeholder {
-  color: var(--tc-faint);
+.tc-payment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--tc-muted);
+}
+
+.tc-payment-field .tc-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.tc-payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Color-coded names + palette picker */
@@ -785,63 +798,83 @@ textarea {
   gap: 8px;
 }
 
-.tc-transfer {
+.tc-settlement-group {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
   border: 1px solid var(--tc-border);
   border-radius: 9px;
   background: var(--tc-panel-2);
 }
 
-.tc-transfer-from,
-.tc-transfer-to {
+.tc-settlement-recipient {
+  margin: 0;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.tc-transfer-to {
-  color: var(--tc-success);
+.tc-recipient-payments {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0 0;
+  border-top: 1px solid var(--tc-border);
 }
 
-.tc-transfer-arrow {
-  display: inline-flex;
-  color: var(--tc-muted);
+.tc-transfer-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.tc-transfer-from {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .tc-transfer-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--tc-mono);
   font-size: 14px;
   color: var(--tc-text);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.tc-pay-list {
+.tc-transfer-methods {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.tc-payment-row {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 0 14px 8px;
 }
 
-.tc-pay {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 12px 14px;
-  border: 1px solid var(--tc-border);
-  border-radius: 9px;
-  background: var(--tc-panel-2);
+.tc-payment-name {
+  min-width: 0;
+  max-width: 35%;
+  font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
-.tc-pay-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--tc-faint);
+.tc-copy-btn {
+  flex-shrink: 0;
+  font-family: var(--tc-sans);
+  font-size: 12px;
 }
 
 .tc-pay-text {
+  min-width: 0;
   font-family: var(--tc-mono);
   font-size: 12px;
   color: var(--tc-muted);
@@ -1251,14 +1284,16 @@ textarea {
     padding: 0 12px 8px;
   }
 
-  .tc-pay-list {
-    padding: 0 12px 8px;
+  .tc-payment-edit-row {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .tc-transfer {
-    flex-wrap: wrap;
-    row-gap: 2px;
-    padding: 12px;
+  .tc-payment-edit-row .tc-payment-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .tc-settlement-group {
+    padding: 10px 12px;
   }
 
   .tc-transfer-amount {

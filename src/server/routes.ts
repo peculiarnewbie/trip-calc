@@ -16,6 +16,7 @@ import * as Store from "./db";
 import type { Env } from "./env";
 import { HttpError } from "./errors";
 import { resolveExpenseInput } from "./expenses";
+import { resolvePaymentMethods } from "./people";
 
 export const EnvService = Context.Service<Env>("Env");
 
@@ -206,22 +207,17 @@ const UpdatePerson = HttpRouter.route(
     return yield* handle(async () => {
       const trip = await requireEditTrip(env.DB, token ?? "");
       const body = decode(UpdatePersonRequestSchema, parseJson(text));
-      if (body.color === undefined && body.paymentInfo === undefined) {
+      if (body.color === undefined && body.paymentMethods === undefined) {
         throw new HttpError(400, "Nothing to update.");
       }
       if (body.color !== undefined && body.color !== null && !isPersonColorKey(body.color)) {
         throw new HttpError(400, "Unknown color.");
       }
-      let paymentInfo: string | null | undefined;
-      if (body.paymentInfo !== undefined) {
-        paymentInfo = body.paymentInfo?.trim() || null;
-        if (paymentInfo && paymentInfo.length > 1000) {
-          throw new HttpError(400, "Payment info is too long (1000 characters max).");
-        }
-      }
+      const paymentMethods =
+        body.paymentMethods === undefined ? undefined : resolvePaymentMethods(body.paymentMethods);
       const person = await Store.updatePerson(env.DB, trip.id, personId ?? "", {
         color: body.color,
-        paymentInfo,
+        paymentMethods,
       });
       if (!person) throw new HttpError(404, "Person not found.");
       return person;
