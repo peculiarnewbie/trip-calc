@@ -15,7 +15,7 @@ function person(id: string): Person {
     tripId: "t1",
     name: id.toUpperCase(),
     color: null,
-    paymentInfo: null,
+    paymentMethods: [],
     createdAt: "2026-01-01T00:00:00.000Z",
   };
 }

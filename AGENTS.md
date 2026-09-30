@@ -51,7 +51,9 @@ settings. Trips reached only by link (no account ownership) also hide the sideba
 - `accounts` — id, number (unique), created_at
 - `trips` — id, account_id, name, currency, edit_token, view_token, created_at
 - `people` — id, trip_id, name, color (palette key from `shared/colors.ts`),
-  payment_info (free-text payout details, shown under settling transfers), created_at
+  payment_methods (named payout destinations, shown under settling transfers), created_at.
+  Legacy payment_info is retained in the database; migration 0005 preserves it as
+  a "Payment details" method.
 - `expenses` — id, trip_id, description, amount_cents, payer_id, split_mode (`even` | `custom`), created_at
 - `expense_shares` — id, expense_id, person_id, amount_cents
 

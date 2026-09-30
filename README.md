@@ -21,6 +21,8 @@ Built on the [web-template](https://github.com/peculiarnewbie/web-template)
 
 - Trip list with per-trip totals, scoped to your account number
 - People per trip
+- Multiple payment methods per person, with copy buttons for destinations and
+  amounts on each settlement transfer
 - Expenses with a payer and either an even split or custom per-person amounts
 - Expenses sorted by largest amount, and split lists sorted alphabetically
 - Color-code people from a muted palette; the color follows each name through

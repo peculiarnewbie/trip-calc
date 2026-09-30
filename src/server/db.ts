@@ -5,6 +5,7 @@ import type {
   Expense,
   ExpenseShare,
   Person,
+  PaymentMethod,
   SplitMode,
   Trip,
   TripDetail,
@@ -41,7 +42,7 @@ interface PersonRow {
   trip_id: string;
   name: string;
   color: string | null;
-  payment_info: string | null;
+  payment_methods: string;
   created_at: string;
 }
 
@@ -101,7 +102,7 @@ function toPerson(row: PersonRow): Person {
     tripId: row.trip_id,
     name: row.name,
     color: row.color ?? null,
-    paymentInfo: row.payment_info ?? null,
+    paymentMethods: JSON.parse(row.payment_methods),
     createdAt: row.created_at,
   };
 }
@@ -261,7 +262,7 @@ export async function deleteTrip(db: D1Database, tripId: string): Promise<boolea
 export async function listPeople(db: D1Database, tripId: string): Promise<Person[]> {
   const { results } = await db
     .prepare(
-      "SELECT id, trip_id, name, color, payment_info, created_at FROM people WHERE trip_id = ? ORDER BY created_at ASC, name ASC",
+      "SELECT id, trip_id, name, color, payment_methods, created_at FROM people WHERE trip_id = ? ORDER BY created_at ASC, name ASC",
     )
     .bind(tripId)
     .all<PersonRow>();
@@ -294,14 +295,21 @@ export async function addPerson(
     tripId,
     name,
     color: color ?? (await nextPersonColor(db, tripId)),
-    paymentInfo: null,
+    paymentMethods: [],
     createdAt: new Date().toISOString(),
   };
   await db
     .prepare(
-      "INSERT INTO people (id, trip_id, name, color, payment_info, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO people (id, trip_id, name, color, payment_methods, created_at) VALUES (?, ?, ?, ?, ?, ?)",
     )
-    .bind(person.id, person.tripId, person.name, person.color, person.paymentInfo, person.createdAt)
+    .bind(
+      person.id,
+      person.tripId,
+      person.name,
+      person.color,
+      JSON.stringify(person.paymentMethods),
+      person.createdAt,
+    )
     .run();
   return person;
 }
@@ -310,11 +318,11 @@ export async function updatePerson(
   db: D1Database,
   tripId: string,
   personId: string,
-  patch: { color?: string | null; paymentInfo?: string | null },
+  patch: { color?: string | null; paymentMethods?: readonly PaymentMethod[] },
 ): Promise<Person | null> {
   const row = await db
     .prepare(
-      "SELECT id, trip_id, name, color, payment_info, created_at FROM people WHERE id = ? AND trip_id = ?",
+      "SELECT id, trip_id, name, color, payment_methods, created_at FROM people WHERE id = ? AND trip_id = ?",
     )
     .bind(personId, tripId)
     .first<PersonRow>();
@@ -322,13 +330,13 @@ export async function updatePerson(
 
   const person = toPerson(row);
   const color = patch.color !== undefined ? patch.color : person.color;
-  const paymentInfo = patch.paymentInfo !== undefined ? patch.paymentInfo : person.paymentInfo;
+  const paymentMethods = patch.paymentMethods ?? person.paymentMethods;
 
   await db
-    .prepare("UPDATE people SET color = ?, payment_info = ? WHERE id = ?")
-    .bind(color, paymentInfo, personId)
+    .prepare("UPDATE people SET color = ?, payment_methods = ? WHERE id = ?")
+    .bind(color, JSON.stringify(paymentMethods), personId)
     .run();
-  return { ...person, color, paymentInfo };
+  return { ...person, color, paymentMethods };
 }
 
 export async function deletePerson(
